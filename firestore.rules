@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['difficulty', 'personalBests', 'updatedAt', 'displayName'])
+      );
+
+      function isValidUser(data) {
+        return data.userId == request.auth.uid &&
+               data.email is string &&
+               data.difficulty in ['beginner', 'intermediate', 'advanced'];
+      }
+
+      // --- Logs Subcollection ---
+      match /logs/{logId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidLog(request.resource.data);
+        allow delete: if isOwner(userId);
+
+        function isValidLog(data) {
+          return data.userId == request.auth.uid &&
+                 data.date is timestamp &&
+                 data.exercises is list;
+        }
+      }
+    }
+
+    // --- Workouts Collection (Global) ---
+    match /workouts/{workoutId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only admin or system (server-side/cloud functions) can write. 
+      // For this app, we'll likely generate them in the client but can store them if needed. 
+      // Actually, since it's personal use, we might generate them on the fly if not found.
+    }
+  }
+}

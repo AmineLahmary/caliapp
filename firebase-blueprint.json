@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User specific data and preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["beginner", "intermediate", "advanced"] },
+        "personalBests": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "difficulty"]
+    },
+    "Workout": {
+      "title": "Workout Plan",
+      "description": "A daily or template workout plan",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "exercises": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "reps": { "type": "string" },
+              "sets": { "type": "number" },
+              "notes": { "type": "string" }
+            }
+          }
+        },
+        "targetDate": { "type": "string", "format": "date" }
+      }
+    },
+    "Log": {
+      "title": "Workout Log",
+      "description": "A user's recorded workout session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "workoutId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "exercises": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "completedReps": { "type": "array", "items": { "type": "number" } },
+              "sets": { "type": "number" }
+            }
+          }
+        },
+        "totalReps": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["userId", "date", "exercises"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile and settings"
+    },
+    "/workouts/{workoutId}": {
+      "schema": "Workout",
+      "description": "Global workout plans"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "Log",
+      "description": "User's individual workout logs"
+    }
+  }
+}
